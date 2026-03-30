@@ -57,11 +57,12 @@ class EksCent::Response
         "<input type='hidden' name='csrf_token' value='#{token}'>"
       end
       
-      # Helper for absolute URLs (handles HTTP/HTTPS dynamically)
+      # Helper for absolute URLs (handles HTTP/HTTPS dynamically and supports Proxy/Railway)
       context.define_singleton_method(:full_url) do |path = ""|
         # Use simple locals/env detection
         env = env_ref || {}
-        scheme = env['rack.url_scheme'] || 'http'
+        # Railway/Proxy support: check for X-Forwarded-Proto
+        scheme = env['HTTP_X_FORWARDED_PROTO'] || env['rack.url_scheme'] || 'http'
         host = env['HTTP_HOST'] || 'localhost:3000'
         
         # Ensure path starts with /
@@ -254,13 +255,13 @@ router = EksCent::Router.new do
   # --- SEO Routes ---
 
   get '/robots.txt' do |req, res|
-    scheme = req.env['rack.url_scheme'] || 'http'
+    scheme = req.env['HTTP_X_FORWARDED_PROTO'] || req.env['rack.url_scheme'] || 'http'
     res.headers['Content-Type'] = 'text/plain'
     res.write "User-agent: *\nAllow: /\nSitemap: #{scheme}://#{req.env['HTTP_HOST']}/sitemap.xml"
   end
 
   get '/sitemap.xml' do |req, res|
-    scheme = req.env['rack.url_scheme'] || 'http'
+    scheme = req.env['HTTP_X_FORWARDED_PROTO'] || req.env['rack.url_scheme'] || 'http'
     res.headers['Content-Type'] = 'application/xml'
     posts = Post.all
     xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
