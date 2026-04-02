@@ -9,21 +9,31 @@ end
 
 class Database
   def self.client
-    @client ||= Mysql2::Client.new(
-      host:     ENV['DB_HOST'] || 'localhost',
-      port:     (ENV['DB_PORT'] || 3306).to_i,
-      username: ENV['DB_USER'] || 'root',
-      password: ENV['DB_PASS'] || '',
-      database: ENV['DB_NAME'] || 'elearning_db'
-    )
-  rescue Mysql2::Error
-    # Fallback to connect without database if it doesnt exist yet
-    @client = Mysql2::Client.new(
-      host:     ENV['DB_HOST'] || 'localhost',
-      port:     (ENV['DB_PORT'] || 3306).to_i,
-      username: ENV['DB_USER'] || 'root',
-      password: ENV['DB_PASS'] || ''
-    )
+    return @client if @client && @client.ping
+    
+    begin
+      @client = Mysql2::Client.new(
+        host:     ENV['DB_HOST'] || 'localhost',
+        port:     (ENV['DB_PORT'] || 3306).to_i,
+        username: ENV['DB_USER'] || 'root',
+        password: ENV['DB_PASS'] || '',
+        database: ENV['DB_NAME'] || 'elearning_db',
+        reconnect: true,
+        charset:   'utf8mb4'
+      )
+    rescue Mysql2::Error => e
+      puts "Database Connection Error: #{e.message}. Attempting fallback..."
+      # Fallback to connect without database if it doesnt exist yet
+      @client = Mysql2::Client.new(
+        host:     ENV['DB_HOST'] || 'localhost',
+        port:     (ENV['DB_PORT'] || 3306).to_i,
+        username: ENV['DB_USER'] || 'root',
+        password: ENV['DB_PASS'] || '',
+        reconnect: true,
+        charset:   'utf8mb4'
+      )
+    end
+    @client
   end
 
   def self.query(sql, *args)
@@ -41,7 +51,8 @@ class Database
         host:     ENV['DB_HOST'] || 'localhost',
         port:     (ENV['DB_PORT'] || 3306).to_i,
         username: ENV['DB_USER'] || 'root',
-        password: ENV['DB_PASS'] || ''
+        password: ENV['DB_PASS'] || '',
+        reconnect: true
       )
       c.query("CREATE DATABASE IF NOT EXISTS #{db_name}")
       puts "Database #{db_name} created or already exists."
@@ -54,7 +65,9 @@ class Database
       port:     (ENV['DB_PORT'] || 3306).to_i,
       username: ENV['DB_USER'] || 'root',
       password: ENV['DB_PASS'] || '',
-      database: ENV['DB_NAME'] || 'elearning_db'
+      database: ENV['DB_NAME'] || 'elearning_db',
+      reconnect: true,
+      charset:   'utf8mb4'
     )
     
     # Create Users Table

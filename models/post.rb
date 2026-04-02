@@ -10,7 +10,7 @@ class Post
     @thumbnail_url = attributes['thumbnail_url']
     @thumbnail_public_id = attributes['thumbnail_public_id']
     @author_id = attributes['author_id']
-    @category_id = attributes['category_id']
+    @category_id = (attributes['category_id'].to_s.empty? ? nil : attributes['category_id'].to_i)
     @created_at = attributes['created_at']
     @updated_at = attributes['updated_at']
   end
@@ -74,10 +74,13 @@ class Post
   end
 
   def save
+    # Ensure category_id is nil if empty to avoid DB errors
+    clean_category_id = (@category_id.to_s.empty? ? nil : @category_id.to_i)
+    
     if @id
-      Database.query("UPDATE posts SET title = ?, content = ?, thumbnail_url = ?, thumbnail_public_id = ?, category_id = ? WHERE id = ?", @title, @content, @thumbnail_url, @thumbnail_public_id, @category_id, @id)
+      Database.query("UPDATE posts SET title = ?, content = ?, thumbnail_url = ?, thumbnail_public_id = ?, category_id = ? WHERE id = ?", @title, @content, @thumbnail_url, @thumbnail_public_id, clean_category_id, @id)
     else
-      Database.query("INSERT INTO posts (title, content, thumbnail_url, thumbnail_public_id, author_id, category_id) VALUES (?, ?, ?, ?, ?, ?)", @title, @content, @thumbnail_url, @thumbnail_public_id, @author_id, @category_id)
+      Database.query("INSERT INTO posts (title, content, thumbnail_url, thumbnail_public_id, author_id, category_id) VALUES (?, ?, ?, ?, ?, ?)", @title, @content, @thumbnail_url, @thumbnail_public_id, @author_id, clean_category_id)
       @id = Database.last_id
     end
     self

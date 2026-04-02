@@ -161,31 +161,37 @@ router = EksCent::Router.new do
   # --- Public Routes ---
 
   get '/' do |req, res|
-    @flash_message = req.session.delete('flash_message')
-    
-    # Pagination & Search Params
-    current_page = [req.params['page'].to_i, 1].max
-    search_query = req.params['q']
-    category_id  = req.params['category_id']
-    per_page     = 6
-    
-    @posts      = Post.paginate(page: current_page, per_page: per_page, search: search_query, category_id: category_id)
-    @categories = Category.all
-    total_posts = Post.count(search: search_query, category_id: category_id)
-    total_pages = (total_posts.to_f / per_page).ceil
-    
-    res.render 'index', 
-               posts: @posts, 
-               categories: @categories,
-               title: "Home", 
-               req: req,
-               session: req.session,
-               current_page: current_page,
-               total_pages: total_pages,
-               total_posts: total_posts,
-               search_query: search_query,
-               category_id: category_id,
-               flash_message: @flash_message
+    begin
+      @flash_message = req.session.delete('flash_message')
+      
+      # Pagination & Search Params
+      current_page = [req.params['page'].to_i, 1].max
+      search_query = req.params['q']
+      category_id  = req.params['category_id']
+      per_page     = 6
+      
+      @posts      = Post.paginate(page: current_page, per_page: per_page, search: search_query, category_id: category_id)
+      @categories = Category.all
+      total_posts = Post.count(search: search_query, category_id: category_id)
+      total_pages = (total_posts.to_f / per_page).ceil
+      
+      res.render 'index', 
+                 posts: @posts, 
+                 categories: @categories,
+                 title: "Home", 
+                 req: req,
+                 session: req.session,
+                 current_page: current_page,
+                 total_pages: total_pages,
+                 total_posts: total_posts,
+                 search_query: search_query,
+                 category_id: category_id,
+                 flash_message: @flash_message
+    rescue => e
+      puts "[ERROR] Route '/' failed: #{e.message}"
+      puts e.backtrace.first(10).join("\n")
+      raise e # Re-raise to let ShowExceptions handle the UI
+    end
   end
 
   get '/post/:id' do |req, res|
